@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "421671381603",
+    "project_id": "msapp-15892",
+    "storage_bucket": "msapp-15892.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:421671381603:android:7291b2dd2fb2d13255e656",
+        "android_client_info": {
+          "package_name": "com.example.auth"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCP0wERno7T4e0ehWN1ZI82P7gq446d3Zo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
