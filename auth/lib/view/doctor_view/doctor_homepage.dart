@@ -3,6 +3,8 @@ import 'package:auth/view/screan/Auth/login.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:auth/view/chatbot/chatbot_fab.dart';
+
 
 // --- الصفحة الرئيسية للطبيب | Dashboard Read Only ---
 class DoctorHomePage extends StatefulWidget {
@@ -812,6 +814,7 @@ class PatientHistoryScreen extends StatelessWidget {
     return Directionality(
       textDirection: TextDirection.rtl,
       child: Scaffold(
+        floatingActionButton: const ChatBotFAB(),
         backgroundColor: const Color(0xFFF5F8FF),
         appBar: AppBar(
           title: Text(patientName, style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),

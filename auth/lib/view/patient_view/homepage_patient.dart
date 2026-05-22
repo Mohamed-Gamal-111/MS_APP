@@ -11,6 +11,7 @@ import 'package:auth/view/patient_view/profile_patient.dart';
 import 'package:auth/view/patient_view/sdmt_test/sdmt_test.dart';
 import 'package:auth/view/patient_view/test_Fing/pages/test_dashboard_page.dart';
 import 'finger_test/finger_upload_page.dart';
+import 'package:auth/view/chatbot/chatbot_fab.dart';
 
 class PatientHomePage extends StatefulWidget {
   const PatientHomePage({super.key});
@@ -139,6 +140,7 @@ class _PatientHomePageState extends State<PatientHomePage> {
 
     return Scaffold(
       backgroundColor: const Color(0xFFF5F8FF),
+      floatingActionButton: const ChatBotFAB(),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : Directionality(

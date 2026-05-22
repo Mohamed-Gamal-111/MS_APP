@@ -9,9 +9,10 @@ import 'package:auth/view/screan/Auth/login.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp();
 
-  runApp(const MyApp()); // شيلنا MultiProvider
+await Firebase.initializeApp();
+
+  runApp(const MyApp());
 }
 
 class MyApp extends StatelessWidget {
