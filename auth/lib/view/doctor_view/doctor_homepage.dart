@@ -140,6 +140,7 @@ class _DoctorHomePageState extends State<DoctorHomePage> {
                         activePatients: activePatients,
                         closedPatients: closedPatients,
                         unreadNotifications: unreadCount,
+                        allPatients: patients,
                       ),
                       const SizedBox(height: 18),
                       _buildSearchBar(),
@@ -279,7 +280,18 @@ class _DoctorHomePageState extends State<DoctorHomePage> {
     required int activePatients,
     required int closedPatients,
     required int unreadNotifications,
+    required List<QueryDocumentSnapshot> allPatients,
   }) {
+    final openPatients = allPatients.where((doc) {
+      final data = _docData(doc);
+      return _readBool(data, 'canTakeTest');
+    }).toList();
+
+    final closedPatientsList = allPatients.where((doc) {
+      final data = _docData(doc);
+      return !_readBool(data, 'canTakeTest');
+    }).toList();
+
     return GridView.count(
       crossAxisCount: 2,
       shrinkWrap: true,
@@ -293,24 +305,42 @@ class _DoctorHomePageState extends State<DoctorHomePage> {
           value: '$totalPatients',
           icon: Icons.groups_2_outlined,
           color: _primaryColor,
+          onTap: () => _openPatientsList(
+            title: 'كل المرضى',
+            patients: allPatients,
+          ),
         ),
         _buildStatCard(
           title: 'جلسات مفتوحة',
           value: '$activePatients',
           icon: Icons.play_circle_outline_rounded,
           color: Colors.green,
+          onTap: () => _openPatientsList(
+            title: 'الجلسات المفتوحة',
+            patients: openPatients,
+          ),
         ),
         _buildStatCard(
           title: 'جلسات مغلقة',
           value: '$closedPatients',
           icon: Icons.lock_outline_rounded,
           color: Colors.orange,
+          onTap: () => _openPatientsList(
+            title: 'الجلسات المغلقة',
+            patients: closedPatientsList,
+          ),
         ),
         _buildStatCard(
           title: 'إشعارات جديدة',
           value: '$unreadNotifications',
           icon: Icons.notifications_active_outlined,
           color: Colors.redAccent,
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const DoctorNotificationsPage()),
+            );
+          },
         ),
       ],
     );
@@ -321,57 +351,156 @@ class _DoctorHomePageState extends State<DoctorHomePage> {
     required String value,
     required IconData icon,
     required Color color,
+    required VoidCallback onTap,
   }) {
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: Colors.white,
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
         borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 12,
-            offset: const Offset(0, 6),
+        onTap: onTap,
+        child: Ink(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.04),
+                blurRadius: 12,
+                offset: const Offset(0, 6),
+              ),
+            ],
           ),
-        ],
+          child: Row(
+            children: [
+              Container(
+                width: 42,
+                height: 42,
+                decoration: BoxDecoration(
+                  color: color.withOpacity(0.10),
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: Icon(icon, color: color, size: 24),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Text(
+                          value,
+                          style: const TextStyle(
+                            color: _darkText,
+                            fontSize: 22,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                        const Spacer(),
+                        Icon(Icons.touch_app_rounded, color: color.withOpacity(0.55), size: 16),
+                      ],
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: _mutedText,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
-      child: Row(
-        children: [
-          Container(
-            width: 42,
-            height: 42,
-            decoration: BoxDecoration(
-              color: color.withOpacity(0.10),
-              borderRadius: BorderRadius.circular(14),
+    );
+  }
+
+  void _openPatientsList({
+    required String title,
+    required List<QueryDocumentSnapshot> patients,
+  }) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        return Directionality(
+          textDirection: TextDirection.rtl,
+          child: Container(
+            height: MediaQuery.of(context).size.height * 0.82,
+            decoration: const BoxDecoration(
+              color: _backgroundColor,
+              borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
             ),
-            child: Icon(icon, color: color, size: 24),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
             child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  value,
-                  style: const TextStyle(
-                    color: _darkText,
-                    fontSize: 22,
-                    fontWeight: FontWeight.w800,
+                const SizedBox(height: 12),
+                Container(
+                  width: 52,
+                  height: 5,
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade300,
+                    borderRadius: BorderRadius.circular(20),
                   ),
                 ),
-                const SizedBox(height: 3),
-                Text(
-                  title,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(color: _mutedText, fontSize: 12, fontWeight: FontWeight.w600),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(18, 18, 18, 8),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          title,
+                          style: const TextStyle(
+                            color: _darkText,
+                            fontSize: 21,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+                        decoration: BoxDecoration(
+                          color: _primaryColor.withOpacity(0.10),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Text(
+                          '${patients.length} مريض',
+                          style: const TextStyle(
+                            color: _primaryColor,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Expanded(
+                  child: patients.isEmpty
+                      ? _buildEmptyState(
+                          icon: Icons.inbox_outlined,
+                          title: 'لا توجد بيانات هنا',
+                          subtitle: 'لا يوجد مرضى مطابقين لهذا القسم حالياً.',
+                        )
+                      : ListView.builder(
+                          padding: const EdgeInsets.fromLTRB(16, 8, 16, 18),
+                          itemCount: patients.length,
+                          itemBuilder: (context, index) => _buildPatientCard(patients[index]),
+                        ),
                 ),
               ],
             ),
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 
