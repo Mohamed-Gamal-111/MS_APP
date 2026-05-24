@@ -762,13 +762,14 @@ class PatientHistoryScreen extends StatelessWidget {
     required this.patientName,
   });
 
+  static const Color bg = Color(0xFFF5F8FF);
+  static const Color primary = Color(0xFF4285F4);
+  static const Color dark = Color(0xFF111827);
+  static const Color muted = Color(0xFF7A8194);
+
   Future<void> _resetAndOpenNewSession(BuildContext context) async {
     try {
-      // 1. فتح الصلاحيات وتصفير الستيت لكل التستات في بروفايل المريض
-      await FirebaseFirestore.instance
-          .collection('profiles')
-          .doc(patientUid)
-          .update({
+      await FirebaseFirestore.instance.collection('profiles').doc(patientUid).update({
         'canTakeTest': true,
         'testsStatus': {
           'SDMT': true,
@@ -779,15 +780,11 @@ class PatientHistoryScreen extends StatelessWidget {
           'FingerTap': true,
           'Balance': true,
           'Walking': true,
-          'FingerToNose': true, // 🔥 مبروك! ده السطر البطل اللي حل اللغز النهائي للأزمة كلها
+          'FingerToNose': true,
         }
       });
 
-      // 2. تصفير كولكشن الـ evaluations بأمان صريح عبر الـ set(merge)
-      await FirebaseFirestore.instance
-          .collection('evaluations')
-          .doc(patientUid)
-          .set({
+      await FirebaseFirestore.instance.collection('evaluations').doc(patientUid).set({
         'testResults': FieldValue.delete(),
         'lastUpdated': FieldValue.serverTimestamp(),
       }, SetOptions(merge: true));
@@ -795,7 +792,7 @@ class PatientHistoryScreen extends StatelessWidget {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text("تم بدء جلسة جديدة وتصفير كافة النتائج بنجاح 🚀"),
+            content: Text("تم بدء جلسة جديدة وتصفير النتائج بنجاح"),
             backgroundColor: Colors.green,
           ),
         );
@@ -803,7 +800,10 @@ class PatientHistoryScreen extends StatelessWidget {
     } catch (e) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("حدث خطأ أثناء التصفير: $e"), backgroundColor: Colors.red),
+          SnackBar(
+            content: Text("حدث خطأ أثناء التصفير: $e"),
+            backgroundColor: Colors.red,
+          ),
         );
       }
     }
@@ -814,107 +814,38 @@ class PatientHistoryScreen extends StatelessWidget {
     return Directionality(
       textDirection: TextDirection.rtl,
       child: Scaffold(
+        backgroundColor: bg,
         floatingActionButton: const ChatBotFAB(),
-        backgroundColor: const Color(0xFFF5F8FF),
         appBar: AppBar(
-          title: Text(patientName, style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
           backgroundColor: Colors.white,
           elevation: 0,
-          iconTheme: const IconThemeData(color: Colors.black),
+          centerTitle: true,
+          title: Text(
+            patientName,
+            style: const TextStyle(
+              color: dark,
+              fontWeight: FontWeight.bold,
+              fontSize: 26,
+            ),
+          ),
+          iconTheme: const IconThemeData(color: dark),
         ),
         body: SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(18, 22, 18, 120),
           child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _buildPermissionToggle(patientUid),
-
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: ElevatedButton.icon(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.blueAccent,
-                    minimumSize: const Size(double.infinity, 50),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-                  ),
-                  icon: const Icon(Icons.refresh_rounded, color: Colors.white),
-                  label: const Text("بدء جلسة تقييم جديدة (تصفير النتائج)",
-                      style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                  onPressed: () => _resetAndOpenNewSession(context),
-                ),
-              ),
-
-              const Padding(
-                padding: EdgeInsets.all(20),
-                child: Align(alignment: Alignment.centerRight, child: Text("نتائج التقييم الحالي:", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16))),
-              ),
-
-              StreamBuilder<DocumentSnapshot>(
-                stream: FirebaseFirestore.instance
-                    .collection('evaluations')
-                    .doc(patientUid)
-                    .snapshots(),
-                builder: (context, snapshot) {
-                  if (snapshot.connectionState == ConnectionState.waiting) return const Center(child: CircularProgressIndicator());
-
-                  if (!snapshot.hasData || !snapshot.data!.exists) {
-                    return _buildNoDataPlaceholder();
-                  }
-
-                  final data = snapshot.data!.data() as Map<String, dynamic>?;
-                  if (data == null) return _buildNoDataPlaceholder();
-
-                  final results = data['testResults'] as Map<String, dynamic>?;
-
-                  if (results == null || results.isEmpty) {
-                    return _buildNoDataPlaceholder();
-                  }
-
-                  return Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 10),
-                    child: Card(
-                      elevation: 3,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-                      child: ExpansionTile(
-                        initiallyExpanded: true,
-                        leading: const Icon(Icons.analytics_outlined, color: Colors.blue, size: 28),
-                        title: const Text("نتائج الجلسة النشطة", style: TextStyle(fontWeight: FontWeight.bold)),
-                        subtitle: const Text("تظهر هنا نتائج الاختبارات بمجرد إرسالها"),
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(15),
-                            decoration: BoxDecoration(
-                              color: Colors.grey.withOpacity(0.05),
-                              borderRadius: const BorderRadius.vertical(bottom: Radius.circular(15)),
-                            ),
-                            child: Column(
-                              children: results.entries.map((entry) {
-                                return Padding(
-                                  padding: const EdgeInsets.symmetric(vertical: 8),
-                                  child: Row(
-                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      Text(_translateKey(entry.key), style: const TextStyle(color: Colors.black87, fontSize: 14)),
-                                      Container(
-                                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                                        decoration: BoxDecoration(
-                                          color: Colors.blue.shade50,
-                                          borderRadius: BorderRadius.circular(8),
-                                        ),
-                                        child: Text("${entry.value}",
-                                            style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.blue, fontSize: 16)),
-                                      ),
-                                    ],
-                                  ),
-                                );
-                              }).toList(),
-                            ),
-                          )
-                        ],
-                      ),
-                    ),
-                  );
-                },
-              ),
-              const SizedBox(height: 20),
+              _buildPermissionCard(),
+              const SizedBox(height: 18),
+              _buildNewSessionButton(context),
+              const SizedBox(height: 24),
+              _buildStatsOverview(),
+              const SizedBox(height: 28),
+              _sectionTitle("نتائج التقييم الحالي:", Icons.monitor_heart_outlined),
+              const SizedBox(height: 14),
+              _buildCurrentResults(),
+              const SizedBox(height: 22),
+              _buildInfoCard(),
             ],
           ),
         ),
@@ -922,63 +853,367 @@ class PatientHistoryScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildNoDataPlaceholder() {
-    return const Center(child: Padding(
-      padding: EdgeInsets.all(40.0),
-      child: Column(
-        children: [
-          Icon(Icons.inbox_outlined, color: Colors.grey, size: 50),
-          SizedBox(height: 10), // 🔥 تم تصليحها هنا ورجعت طبيعية
-          Text("لا توجد نتائج لهذه الجلسة بعد", style: TextStyle(color: Colors.grey)),
-        ],
-      ),
-    ));
-  }
-
-  Widget _buildPermissionToggle(String uid) {
+  Widget _buildPermissionCard() {
     return StreamBuilder<DocumentSnapshot>(
-      stream: FirebaseFirestore.instance.collection('profiles').doc(uid).snapshots(),
+      stream: FirebaseFirestore.instance.collection('profiles').doc(patientUid).snapshots(),
       builder: (context, snapshot) {
-        if (!snapshot.hasData || !snapshot.data!.exists) return const SizedBox();
+        bool canTakeTest = false;
 
-        Map<String, dynamic> data = snapshot.data!.data() as Map<String, dynamic>;
-        bool canTakeTest = data.containsKey('canTakeTest') ? data['canTakeTest'] : false;
+        if (snapshot.hasData && snapshot.data!.exists) {
+          final data = snapshot.data!.data() as Map<String, dynamic>;
+          canTakeTest = data['canTakeTest'] ?? false;
+        }
 
         return Container(
-          margin: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(20),
-            boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 10)],
-          ),
-          child: SwitchListTile(
-            title: const Text("الصلاحية العامة للدخول", style: TextStyle(fontWeight: FontWeight.bold)),
-            subtitle: Text(canTakeTest ? "مفتوح الآن للمريض" : "مغلق (المريض لا يستطيع الدخول)"),
-            value: canTakeTest,
-            activeColor: Colors.green,
-            onChanged: (bool value) async {
-              await FirebaseFirestore.instance.collection('profiles').doc(uid).update({'canTakeTest': value});
-            },
+          padding: const EdgeInsets.all(20),
+          decoration: _cardDecoration(),
+          child: Row(
+            children: [
+              Switch(
+                value: canTakeTest,
+                activeThumbColor: Colors.green,
+                activeTrackColor: Colors.green.withOpacity(0.35),
+                onChanged: (value) async {
+                  await FirebaseFirestore.instance
+                      .collection('profiles')
+                      .doc(patientUid)
+                      .update({'canTakeTest': value});
+                },
+              ),
+              const Spacer(),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  const Text(
+                    "الصلاحية العامة للدخول",
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: dark,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    canTakeTest ? "مفتوح الآن للمريض" : "مغلق للمريض حالياً",
+                    style: const TextStyle(
+                      fontSize: 14,
+                      color: muted,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(width: 12),
+              Icon(
+                canTakeTest ? Icons.verified_user_outlined : Icons.lock_outline,
+                color: canTakeTest ? Colors.green : Colors.orange,
+                size: 34,
+              ),
+            ],
           ),
         );
       },
     );
   }
 
+  Widget _buildNewSessionButton(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      height: 64,
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Color(0xFF4285F4), Color(0xFF2557E8)],
+          begin: Alignment.centerRight,
+          end: Alignment.centerLeft,
+        ),
+        borderRadius: BorderRadius.circular(22),
+        boxShadow: [
+          BoxShadow(
+            color: primary.withOpacity(0.28),
+            blurRadius: 18,
+            offset: const Offset(0, 10),
+          ),
+        ],
+      ),
+      child: ElevatedButton.icon(
+        onPressed: () => _resetAndOpenNewSession(context),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Colors.transparent,
+          shadowColor: Colors.transparent,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
+        ),
+        icon: const Icon(Icons.refresh_rounded, color: Colors.white),
+        label: const Text(
+          "بدء جلسة تقييم جديدة (تصفير النتائج)",
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStatsOverview() {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 18),
+      decoration: _cardDecoration(),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceAround,
+        children: [
+          _miniStat(Icons.calendar_month_outlined, "0", "آخر جلسة", primary),
+          _divider(),
+          _miniStat(Icons.check_circle_outline, "0", "الاختبارات", Colors.green),
+          _divider(),
+          _miniStat(Icons.query_stats_rounded, "0", "التقييمات", Colors.orange),
+          _divider(),
+          _miniStat(Icons.assignment_outlined, "0", "الجلسات", Colors.deepPurpleAccent),
+        ],
+      ),
+    );
+  }
+
+  Widget _miniStat(IconData icon, String value, String label, Color color) {
+    return Column(
+      children: [
+        Icon(icon, color: color, size: 28),
+        const SizedBox(height: 10),
+        Text(
+          value,
+          style: const TextStyle(
+            color: dark,
+            fontSize: 22,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(label, style: const TextStyle(color: dark, fontSize: 13)),
+      ],
+    );
+  }
+
+  Widget _divider() {
+    return Container(
+      height: 58,
+      width: 1,
+      color: Colors.grey.withOpacity(0.18),
+    );
+  }
+
+  Widget _sectionTitle(String title, IconData icon) {
+    return Row(
+      children: [
+        Icon(icon, color: primary, size: 24),
+        const SizedBox(width: 8),
+        Text(
+          title,
+          style: const TextStyle(
+            color: dark,
+            fontWeight: FontWeight.bold,
+            fontSize: 20,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildCurrentResults() {
+    return StreamBuilder<DocumentSnapshot>(
+      stream: FirebaseFirestore.instance.collection('evaluations').doc(patientUid).snapshots(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return _bigCard(
+            child: const Center(child: CircularProgressIndicator(color: primary)),
+          );
+        }
+
+        if (!snapshot.hasData || !snapshot.data!.exists) {
+          return _emptyResults();
+        }
+
+        final data = snapshot.data!.data() as Map<String, dynamic>?;
+        final results = data?['testResults'] as Map<String, dynamic>?;
+
+        if (results == null || results.isEmpty) {
+          return _emptyResults();
+        }
+
+        return Container(
+          padding: const EdgeInsets.all(18),
+          decoration: _cardDecoration(),
+          child: Column(
+            children: results.entries.map((entry) {
+              return Container(
+                margin: const EdgeInsets.only(bottom: 12),
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF8FBFF),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+                      decoration: BoxDecoration(
+                        color: primary.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text(
+                        "${entry.value}",
+                        style: const TextStyle(
+                          color: primary,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
+                      ),
+                    ),
+                    const Spacer(),
+                    Text(
+                      _translateKey(entry.key),
+                      style: const TextStyle(
+                        color: dark,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }).toList(),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _emptyResults() {
+    return _bigCard(
+      child: Column(
+        children: [
+          Container(
+            width: 130,
+            height: 130,
+            decoration: BoxDecoration(
+              color: primary.withOpacity(0.06),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              Icons.inventory_2_outlined,
+              size: 72,
+              color: primary.withOpacity(0.55),
+            ),
+          ),
+          const SizedBox(height: 24),
+          const Text(
+            "لا توجد نتائج لهذه الجلسة بعد",
+            style: TextStyle(
+              color: dark,
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 10),
+          const Text(
+            "ابدأ جلسة تقييم جديدة لعرض النتائج هنا",
+            style: TextStyle(color: muted, fontSize: 14),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildInfoCard() {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: _cardDecoration(),
+      child: Row(
+        children: [
+          CircleAvatar(
+            radius: 34,
+            backgroundColor: primary.withOpacity(0.08),
+            child: const Icon(Icons.lightbulb_outline_rounded, color: primary, size: 34),
+          ),
+          const SizedBox(width: 16),
+          const Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Text(
+                  "معلومة",
+                  style: TextStyle(
+                    color: dark,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 17,
+                  ),
+                ),
+                SizedBox(height: 8),
+                Text(
+                  "يمكنك البدء في جلسة تقييم جديدة لمسح النتائج السابقة والحصول على تحليل دقيق للحالة الحالية.",
+                  textAlign: TextAlign.right,
+                  style: TextStyle(
+                    color: dark,
+                    fontSize: 14,
+                    height: 1.6,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _bigCard({required Widget child}) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 42),
+      decoration: _cardDecoration(),
+      child: child,
+    );
+  }
+
+  BoxDecoration _cardDecoration() {
+    return BoxDecoration(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(26),
+      boxShadow: [
+        BoxShadow(
+          color: Colors.blueGrey.withOpacity(0.08),
+          blurRadius: 22,
+          offset: const Offset(0, 10),
+        ),
+      ],
+    );
+  }
+
   String _translateKey(String key) {
     switch (key) {
-      case 'SDMT_ProcessingSpeed': return 'سرعة المعالجة (SDMT)';
-      case 'FSS_Fatigue': return 'مستوى الإرهاق (FSS)';
-      case 'FingerTap_Right': return 'نقر اليد اليمنى';
-      case 'FingerTap_Left': return 'نقر اليد اليسرى';
-      case 'HADS_Anxiety': return 'مستوى القلق (HADS)';
-      case 'HADS_Depression': return 'مستوى الاكتئاب (HADS)';
-      case 'BVMT_Drawing': return 'اختبار الرسم (BVMT)';
-      case 'CVLT_Memory': return 'اختبار الذاكرة (CVLT)';
-      case 'Finger_Prediction': return 'تحليل حركة اليد (Finger To Nose)';
-      case 'Romberg_Prediction': return 'تحليل ثبات الاتزان (Romberg)';
-      case 'Tandem_Prediction': return 'تحليل نمط السير (Tandem المشي)';
-      default: return key;
+      case 'SDMT_ProcessingSpeed':
+        return 'سرعة المعالجة (SDMT)';
+      case 'FSS_Fatigue':
+        return 'مستوى الإرهاق (FSS)';
+      case 'FingerTap_Right':
+        return 'نقر اليد اليمنى';
+      case 'FingerTap_Left':
+        return 'نقر اليد اليسرى';
+      case 'HADS_Anxiety':
+        return 'مستوى القلق (HADS)';
+      case 'HADS_Depression':
+        return 'مستوى الاكتئاب (HADS)';
+      case 'BVMT_Drawing':
+        return 'اختبار الرسم (BVMT)';
+      case 'CVLT_Memory':
+        return 'اختبار الذاكرة (CVLT)';
+      case 'Finger_Prediction':
+        return 'تحليل حركة اليد (Finger To Nose)';
+      case 'Romberg_Prediction':
+        return 'تحليل ثبات الاتزان (Romberg)';
+      case 'Tandem_Prediction':
+        return 'تحليل نمط السير (Tandem)';
+      default:
+        return key;
     }
   }
 }
