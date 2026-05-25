@@ -1,4 +1,5 @@
 import 'package:auth/view/doctor_view/doctor_notifications_page.dart';
+import 'package:auth/view/doctor_view/doctor_profile_page.dart';
 import 'package:auth/view/screan/Auth/login.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -78,6 +79,18 @@ class _DoctorHomePageState extends State<DoctorHomePage> {
           backgroundColor: Colors.white,
           elevation: 0,
           actions: [
+            IconButton(
+              tooltip: 'الملف الشخصي',
+              icon: const Icon(Icons.person_outline_rounded, color: _primaryColor),
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const DoctorProfilePage(),
+                  ),
+                );
+              },
+            ),
             _buildNotificationButton(doctorUid),
             IconButton(
               tooltip: 'تسجيل الخروج',
