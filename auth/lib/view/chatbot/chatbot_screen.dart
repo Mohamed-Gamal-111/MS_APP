@@ -165,7 +165,7 @@ class _ChatBotScreenState extends State<ChatBotScreen> {
                     controller: _controller,
 
                     decoration: InputDecoration(
-                      hintText: 'اسأل عن MS أو Parkinson...',
+                      hintText: 'اسأل عن MS ...',
 
                       filled: true,
                       fillColor: Colors.grey.shade100,

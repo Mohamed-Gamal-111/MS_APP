@@ -3,7 +3,6 @@ import 'package:auth/view/screan/Auth/login.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:auth/view/chatbot/chatbot_fab.dart';
 
 
 // --- الصفحة الرئيسية للطبيب | Dashboard Read Only ---
@@ -815,7 +814,6 @@ class PatientHistoryScreen extends StatelessWidget {
       textDirection: TextDirection.rtl,
       child: Scaffold(
         backgroundColor: bg,
-        floatingActionButton: const ChatBotFAB(),
         appBar: AppBar(
           backgroundColor: Colors.white,
           elevation: 0,

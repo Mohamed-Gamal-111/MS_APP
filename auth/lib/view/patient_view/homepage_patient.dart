@@ -458,11 +458,7 @@ class _PatientHomePageState extends State<PatientHomePage> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
-                _buildLiquidNavItem(
-                  icon: Icons.person_outline_rounded,
-                  label: 'الملف',
-                  index: 0,
-                ),
+                
                 _buildLiquidNavItem(
                   icon: Icons.assignment_outlined,
                   label: 'الاختبارات',
